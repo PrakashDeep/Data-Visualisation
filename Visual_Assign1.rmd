@@ -1,0 +1,105 @@
+---
+title: "Visual Assignment 1"
+author: "Prakash"
+output: html_document
+---
+
+```{r setup, include=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r ,warning=FALSE,message=FALSE}
+library(ggplot2)
+library(dplyr)
+odi.batting.analysis <- read.csv("C:/Users/Admin/Downloads/odi-batting-analysis (1).csv",header = T)
+odi <- odi.batting.analysis
+```
+
+## 1 plotting total runs by month, day of month and weekday
+
+
+
+```{r}
+total_runs_month = odi %>% group_by(month) %>% summarise(TotalRuns = sum(Runs,na.rm=T))
+
+ggplot(total_runs_month,aes(x=month,y = TotalRuns)) + geom_bar(stat = 'identity')+ coord_flip() + scale_x_continuous(breaks =  scales::pretty_breaks(n = 12))
+
+total_run_day = odi %>% group_by(Day) %>% summarise(TotalRunsDay = sum(Runs,na.rm=TRUE))
+
+ggplot(total_run_day,aes(x=Day,y = TotalRunsDay)) + geom_bar(stat = 'identity')+ coord_flip() + scale_x_continuous(breaks =  scales::pretty_breaks(n = 31))
+
+total_runs_weekday = odi %>% group_by(DayofWeek) %>% summarise(TotalRunsWeek = sum(Runs,na.rm=TRUE))
+
+ggplot(total_runs_weekday,aes(x=DayofWeek,y = TotalRunsWeek)) + geom_bar(stat = 'identity')+ coord_flip() + scale_x_continuous(breaks =  scales::pretty_breaks(n = 7))
+
+
+
+```
+
+
+##2 frequency count of bin
+
+```{r}
+odi<-na.omit(odi)
+odi$bin <- cut(odi$Runs,breaks = c(0,25,50,75,100,200),labels = c("0-25","26-50","51-75","76-100","100+"),include.lowest = TRUE)
+ggplot(odi,aes(x=bin)) +geom_bar()
+
+```
+
+
+## 3 Top player's century and ducks over year
+
+```{r}
+player_summary = odi %>% group_by(Player) %>% summarise(TotalRuns=sum(Runs))
+top_players = player_summary %>% arrange(-TotalRuns)
+top_players <- head(top_players,10)
+top_players_names <- top_players$Player
+top_players_odi <- odi[odi$Player %in% top_players_names,]
+odi$Year <- as.factor(odi$Year)
+summary_century = top_players_odi %>% group_by(Player,Year) %>% summarise(count = sum(Runs>=100,na.rm=T))
+ggplot(summary_century,aes(x=Year,y = count))+ geom_bar(stat = 'identity') + facet_wrap(~Player)
+
+summary_ducks = top_players_odi %>% group_by(Player,Year) %>% summarise(countDucks = sum(Runs<1,na.rm=T))
+ggplot(summary_ducks,aes(x=Year,y = countDucks))+ geom_bar(stat = 'identity') +facet_wrap(~Player) 
+
+```
+
+
+
+## 4 a & b Poor player
+
+```{r}
+player_int = odi %>% group_by(Player)%>% summarise(TotalRuns=sum(Runs,na.rm=T)) %>% arrange(TotalRuns)
+player_int_5000 <- filter(player_int,TotalRuns>=5000)
+ggplot(head(player_int_5000,10),aes(x=Player,y=TotalRuns)) + geom_bar(stat='identity') + coord_flip()
+
+
+player_int_50 <- odi %>% group_by(Player) %>% summarise(TotalRuns = sum(Runs,na.rm=T),count=n()) %>% arrange(TotalRuns)
+player_int_50 <- filter(player_int_50,count>50)
+ggplot(head(player_int_50,10),aes(x=Player,y=TotalRuns)) + geom_bar(stat = 'identity') +coord_flip()
+
+```
+
+
+
+## 5 New column having word count of names
+
+
+```{r}
+odi$Player <- as.character(odi$Player)
+playerword_list <- strsplit(odi$Player," ")
+odi$wordcount<-sapply(playerword_list,length)
+head(odi,10)
+
+```
+
+
+## 6 Cross Tab
+
+```{r}
+crossTab<- xtabs(~month+Day,data = odi)
+ftable(crossTab)
+```
